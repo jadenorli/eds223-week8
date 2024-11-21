@@ -1,0 +1,80 @@
+---
+title: "EDS_223_DS8"
+format: html
+editor: visual
+---
+
+# Background:
+This week, you will practice function making with rasters and create a generalizable workflow to determine the climate envelope (or the climate where a species currently lives) of two endemic species to California:
+
+- Tule elk (Cervus canadensis nannodes)
+- Yellow-billed magpie (Pica nutalli)
+
+# Task:
+
+Now, to meet this week’s learning objectives, your task:
+
+1. Update the bioclim_rast layer names to match the Bioclimatic variables using names()
+2. Use st_as_sf to convert and find the geographic extent of species occurrence data magpie using st_bbox()
+3. Crop bioclim_rast to match the extent of species occurrence data magpie
+4. Extract points from the cropped bioclim_rast for each occurrence in magpie
+5. Create “background values” by using dismo::randomPoints() to generate random sample points from the cropped bioclim_rast
+6. Extract points from bioclim_rast for each random sample point generated in Step #5
+7. Plot species climate niche and background climate (temperature vs. precipitation)
+8. Modify steps 2-7 into a generalizable workflow for other species occurrence data
+9. Try your new function with species occurrence data tule_elk
+
+# 1. Load Libraries
+```{r}
+library(tidyverse)
+library(sf)
+library(terra)
+library(dismo)
+library(tmap)
+
+```
+
+
+# 2. Read Data
+```{r}
+magpie <- read_csv(here::here("data_ds", "magpie_obvs.csv"))
+tule_elk <- read_csv(here::here("data_ds", "tule_elk_obvs.csv"))
+
+bioclim_dir <- here::here("data_ds", "climate", "wc2.1_2.5m")
+bioclim <- list.files(bioclim_dir, pattern = glob2rx("*.tif$"), full.names = TRUE)
+bioclim_rast <- rast(bioclim)
+
+```
+
+
+# 3. Rename Layers
+```{r}
+#determine the current order of the layers
+names(bioclim_rast)
+
+#create a vector of variables to replace the variable names 
+variables <- c("annual_mean_temperature", "mean_temp_warmest_qrt", "mean_temp_coldest_qrt", "annual_percip", "wettest_mnth_percip", "driest_mnth_percip", "percip_seasonality", "wettest_qrt_percip", "driest_qrt_percip", "warmest_qrt_percip", "coldest_qrt_percip", "mean_diurnal_range", "isothermality", "temp_seasonality", "max_temp_warmest_mnth", "min_temp_coldest_mnth", "temp_annual_range", "mean_temp_wettest_qrt", "mean_temp_driest_qrt")
+
+#reassign the variables to the layer names
+names(bioclim_rast) <- variables
+
+#verify that the renaming worked
+print(names(bioclim_rast))
+
+
+```
+
+
+# 4. Find Geographic Extent of Species
+```{r}
+#convert the magpie data to an sf object
+magpie_sf <- magpie %>%
+  rename(long = longitude,
+         lat = latitude) %>%
+  drop_na(long, lat) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326) 
+
+#
+
+```
+
