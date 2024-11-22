@@ -5,6 +5,7 @@ editor: visual
 ---
 
 # 1. Load Libraries
+
 ```{r}
 library(tidyverse)
 library(sf)
@@ -28,15 +29,15 @@ bioclim_sort <- bioclim[
 bioclim_rast <- rast(bioclim_sort)
 ```
 
-
 # 2. Name Raster Layers
+
 ```{r}
 variables <- c("annualMeanTemp", "meanDiurnalRange", "isothermality", "tempSeasonality", "maxTempWarmMonth", "maxTempColdMonth", "tempAnnualRange", "meanTempWetQ", "meanTempDryQ", "meanTempWarmQ", "meanTempColdQ", "annualPrecip", "precipWetMonth", "precipDryMonth", "precipSeasonality", "precipWetQ", "precipDryQ", "precipWarmQ", "precipColdQ")
 names(bioclim_rast) <- variables
 ```
 
-
 # 3. Find Geographic Extent of Species Occurence
+
 ```{r}
 magpie_sf <- magpie %>%
   rename(long = longitude,
@@ -45,27 +46,25 @@ magpie_sf <- magpie %>%
   st_as_sf(coords = c("long", "lat"), crs = 4326)
 ```
 
-
 ```{r}
 # Obtain geographic extent/bounding box of the species occurrences
 magpie_bbox <- st_bbox(magpie_sf)
 ```
 
-
 # 4. Crop Raster and Extract Points for Species Occurence
+
 ```{r}
 # Crop raster to match the geographic extent of the species occurrences
 bioclim_crop <- crop(bioclim_rast, magpie_bbox)
 ```
-
 
 ```{r}
 # Extract points from raster for all species occurrences
 bioClim_pts <- as_tibble(extract(bioclim_crop, magpie_sf))
 ```
 
-
 # 5. Crop Raster and Extract Random Points
+
 ```{r}
 set.seed(42) # for reproducibility
 # Generate random sample points from raster
@@ -74,14 +73,13 @@ random_pts <- dismo::randomPoints(mask = raster(bioclim_crop[["annualMeanTemp"]]
                                   ext = magpie_bbox)
 ```
 
-
 ```{r}
 # Extract points from raster for random sample points
 bioClim_random_pts <- as_tibble(extract(bioclim_crop, random_pts))
 ```
 
-
 # 6. View Map
+
 ```{r}
 map_1 <- tm_shape(raster(bioclim_crop[["annualPrecip"]])) +
   tm_raster(palette = "Blues", title = "Annual Precipitation") +
@@ -100,8 +98,8 @@ map_2 <- tm_shape(raster(bioclim_crop[["annualMeanTemp"]])) +
 tmap_arrange(map_1, map_2)
 ```
 
-
 # 7. View Plot
+
 ```{r}
 plot_1 <- ggplot(data = bioClim_pts, aes(x = annualPrecip, y = annualMeanTemp)) +
   geom_point(shape = 16, color = "#3a5a40") +
@@ -121,6 +119,7 @@ plot_1 + plot_2
 ```
 
 # 8. Create Generalizable Workflow
+
 ```{r}
 climate_envelope <- function(clim_rast, clim_var1, clim_var2, occurences, species_name){
   
@@ -179,14 +178,11 @@ climate_envelope <- function(clim_rast, clim_var1, clim_var2, occurences, specie
 }
 ```
 
-
 ```{r}
 climate_envelope(clim_rast = bioclim_rast, clim_var1 = "annualPrecip", clim_var2 = "annualMeanTemp", occurences = tule_elk, species_name = "Tule Elk")
 
 tule_elk_map_1
 ```
-
-
 
 ```{r}
 tule_elk_map_2
@@ -199,4 +195,3 @@ tule_elk_plot_1
 ```{r}
 tule_elk_plot_2
 ```
-

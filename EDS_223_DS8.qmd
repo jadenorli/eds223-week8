@@ -53,7 +53,7 @@ bioclim_rast <- rast(bioclim)
 names(bioclim_rast)
 
 #create a vector of variables to replace the variable names 
-variables <- c("annual_mean_temperature", "mean_temp_warmest_qrt", "mean_temp_coldest_qrt", "annual_percip", "wettest_mnth_percip", "driest_mnth_percip", "percip_seasonality", "wettest_qrt_percip", "driest_qrt_percip", "warmest_qrt_percip", "coldest_qrt_percip", "mean_diurnal_range", "isothermality", "temp_seasonality", "max_temp_warmest_mnth", "min_temp_coldest_mnth", "temp_annual_range", "mean_temp_wettest_qrt", "mean_temp_driest_qrt")
+variables <- c("annual_mean_temperature", "mean_temp_warmest_qrt", "mean_temp_coldest_qrt", "annual_precip", "wettest_mnth_precip", "driest_mnth_precip", "precip_seasonality", "wettest_qrt_precip", "driest_qrt_precip", "warmest_qrt_precip", "coldest_qrt_precip", "mean_diurnal_range", "isothermality", "temp_seasonality", "max_temp_warmest_mnth", "min_temp_coldest_mnth", "temp_annual_range", "mean_temp_wettest_qrt", "mean_temp_driest_qrt")
 
 #reassign the variables to the layer names
 names(bioclim_rast) <- variables
@@ -74,7 +74,77 @@ magpie_sf <- magpie %>%
   drop_na(long, lat) %>%
   st_as_sf(coords = c("long", "lat"), crs = 4326) 
 
-#
+#create a boundary box from the magpie sf dataframe
+magpie_bbox <- st_bbox(magpie_sf)
 
 ```
 
+
+# 5. Extract Climate Points from Magpie Data
+
+## a) Crop Climate Data
+```{r}
+#crop the bioclim raster to the geographical extent of the magpie data
+bioclim_crop <- crop(bioclim_rast, magpie_bbox) 
+
+```
+
+
+## b) Extract Climate Data
+```{r}
+#extract points from the bioclim data for each occurrence in the magpie data
+bioclim_pts <- extract(bioclim_crop, magpie_sf)
+
+```
+
+
+# 6. Generate Background Values
+```{r}
+#set the seed so that the random points are constant
+set.seed(42)
+
+#sample random points from the bioclim data
+random_pts <- dismo::randomPoints(mask = raster(bioclim_crop[["annual_mean_temperature"]]), #need to use the raster package so need to transform from terra to rast
+                                  n = nrow(magpie) * 2, #this will generate double the amount of samples
+                                  ext = magpie_bbox)
+
+```
+
+
+# 7. Extract Climate Points for Random Data
+```{r}
+#extract points from the bioclim data for each occurrence in the random points data
+bioclim_random_pts <- extract(bioclim_crop, random_pts)
+
+```
+
+
+# 8. Visualize Magpie Climate Niche
+
+## a) Precipitation
+```{r}
+#create a map to visualize the magpie occurrences over the precipitation data 
+tmap_mode("plot")
+
+tm_shape(bioclim_crop[["annual_precip"]]) +
+  tm_raster(palette = "Blues", title = "Annual Precipitation") +
+  tm_shape(magpie_sf) +
+  tm_dots(col = "#3a5a40", size = 0.15) +
+  tm_layout(legend.position = c("left", "bottom"),
+            legend.bg.color = "white")
+
+```
+
+## b) Temperature
+```{r}
+#create a map to visualize the magpie occurrences over the temperature data 
+tmap_mode("plot")
+
+tm_shape(bioclim_crop[["annual_mean_temperature"]]) +
+  tm_raster(palette = "-RdYlBu", title = "Annual Mean Temperature") +
+  tm_shape(magpie_sf) +
+  tm_dots(col = "#3a5a40", size = 0.15) +
+  tm_layout(legend.position = c("left", "bottom"),
+            legend.bg.color = "white")
+
+```
